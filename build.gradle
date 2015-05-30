@@ -1,0 +1,58 @@
+import org.ajoberstar.gradle.git.tasks.*
+
+buildscript {
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'org.ajoberstar:gradle-git:0.2.3'
+	}
+}
+
+apply plugin: 'java'
+apply from: 'http://dl.bintray.com/shemnon/javafx-gradle/8.1.1/javafx.plugin'
+apply plugin: 'eclipse'
+
+sourceCompatibility = 1.7
+version = '0.0.1'
+
+def jfxMainClass = 'org.kneelawk.streeeditor.STreeEditor'
+def gitRepoDir = 'git-repo'
+
+def streeURI = 'https://github.com/Kneelawk/STree.git'
+def streeVersion = '1.1.2'
+def streeJarFile = "stree-core-${streeVersion}.jar"
+def streeRepo = "${gitRepoDir}/stree-core"
+def pathToSTreeJarFile = "${streeRepo}/build/libs/${streeJarFile}"
+
+def filePathDeps = [pathToSTreeJarFile]
+
+task gitSTreeLib(type: GitClone) {
+	uri = streeURI
+	def dest = file(streeRepo)
+	destinationPath = dest
+	bare = false
+	enabled = !dest.exists()
+}
+
+task buildSTreeLib(dependsOn: gitSTreeLib, type: GradleBuild) {
+	buildFile = "${streeRepo}/build.gradle"
+	dir = streeRepo
+	tasks = ['build']
+}
+
+task buildLibraries(dependsOn: [buildSTreeLib]) {
+}
+
+eclipseClasspath.dependsOn buildLibraries
+compileJava.dependsOn buildLibraries
+
+dependencies {
+	compile files(filePathDeps)
+}
+
+javafx {
+	appID 'STreeEditor'
+	appName 'STree Editor'
+	mainClass jfxMainClass
+}
